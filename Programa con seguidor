@@ -1,0 +1,108 @@
+#include <Servo.h>
+
+Servo Der; // 
+Servo Izq; // 
+Servo Mano; // Garra
+Servo Brazo; // 
+Servo Piston; // empuja la mierda 
+
+int sensorPin = 3; // Pin donde está conectado OUT del sensor pelota
+int valorSensorPelota = 0;
+
+float error;
+float errorant=0;
+float correccion=0;
+float integral=0;
+float diferencial=0;
+
+bool tengoPelota=false;
+
+const int T1=10;  
+const int E1=11; 
+
+void setup() {
+  
+  Der.attach();
+  Izq.attach();
+  Mano.attach();
+  Brazo.attach();
+  Piston.attach();
+  pinMode(sensorPin,INPUT);
+  pinMode(T1, OUTPUT);
+  pinMode(E1, INPUT);
+  Der.write(0);
+  Izq.write(0);
+  Piston.write(0);
+  Serial.begin(9600);
+  delay(2000);
+ 
+  
+}
+
+
+void loop() {
+
+Distancia();
+
+    dt = (millis() - tiempoAnterior) / 1000.0;
+    tiempoAnterior = millis();
+
+    error = -3.0*analogRead(A7) - 2.0*analogRead(A6) - 1.5*analogRead(A5) - 1.0*analogRead(A4) + 1.0*analogRead(A3) + 1.5*analogRead(A2) + 2.0*analogRead(A1) + 3.0*analogRead(A0);
+
+    diferencial = (error - errorant) / dt;
+    integral = integral + error * dt;
+    integral = constrain(integral, -10000.0, 10000.0);
+    errorant = error;
+
+    correccion = (error / 7.0) + 0.18 * diferencial + 0.0003125 * integral;
+
+    seguir(40, correccion);
+
+
+}
+
+
+ 
+ 
+void Distancia(){
+  long t;
+  digitalWrite(T1, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(T1,LOW);
+  t = pulseIn(E1, HIGH);
+  dis = t/59;
+}
+
+void velocidad(int vel) {
+  vel = constrain(vel, 0, 90);
+
+  Izq.write(90 + vel);
+  Der.write(90 - vel);
+}
+
+void seguir(int velocidad, float correccion) {
+  
+int izq = constrain(90 + velocidad + correccion, 0, 180);
+int der = constrain(90 - velocidad + correccion, 0, 180);
+
+
+  Izq.write(izq);
+  Der.write(der);
+
+}
+
+void atras(int velocidad) {
+  Izq.write(90 - velocidad);
+  Der.write(90 + velocidad);
+}
+
+void derecha(int velocidad) {
+  motorIzq.write(90 + velocidad);
+  motorDer.write(90 + velocidad);
+}
+
+
+void izquierda(int velocidad) {
+  Izq.write(90 - velocidad);
+  Der.write(90 - velocidad);
+}
